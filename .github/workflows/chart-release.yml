@@ -1,43 +1,68 @@
-name: Chart Release
+name: chart-release
 
 on:
   push:
-    branches: [main]
-    paths: ['charts/mcp/**']
+    branches:
+      - main
+    paths:
+      - "charts/mcp/**"
   repository_dispatch:
-    types: [chart-update]
+    types:
+      - chart-update
   workflow_dispatch:
 
 permissions:
-  contents: read
   packages: write
+  contents: read
+
+env:
+  CHART_DIR: charts/mcp
+  OCI_REGISTRY: ghcr.io
+  OCI_TARGET: oci://ghcr.io/squadrules/charts
 
 jobs:
-  lint-and-publish:
+  release:
+    name: Lint, package and publish chart
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up Helm
         uses: azure/setup-helm@v4
         with:
-          version: v3.16.0
+          version: v4.0.5
+
+      - name: Add dependency repositories
+        run: |
+          helm repo add qdrant https://qdrant.github.io/qdrant-helm
+          helm repo add valkey https://valkey.io/valkey-helm/
+          helm repo update
+
+      - name: Build chart dependencies
+        run: helm dependency build "$CHART_DIR"
 
       - name: Lint chart
-        run: helm lint charts/mcp --strict
+        run: helm lint "$CHART_DIR" --strict
 
       - name: Package chart
+        run: helm package "$CHART_DIR" --destination dist
+
+      - name: Log in to GHCR
         run: |
-          CHART_VERSION=$(grep '^version:' charts/mcp/Chart.yaml | awk '{print $2}')
-          helm package charts/mcp --destination dist
-          echo "chart_version=${CHART_VERSION}" >> "$GITHUB_ENV"
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login "$OCI_REGISTRY" \
+            --username "${{ github.actor }}" \
+            --password-stdin
 
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Push chart
-        run: helm push "dist/mcp-${chart_version}.tgz" oci://ghcr.io/squadrules/charts
+      - name: Push chart to OCI registry
+        run: |
+          shopt -s nullglob
+          packages=(dist/*.tgz)
+          if [ ${#packages[@]} -eq 0 ]; then
+            echo "No packaged chart found in dist/" >&2
+            exit 1
+          fi
+          for pkg in "${packages[@]}"; do
+            echo "Pushing $pkg to $OCI_TARGET"
+            helm push "$pkg" "$OCI_TARGET"
+          done
