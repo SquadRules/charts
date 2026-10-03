@@ -45,7 +45,10 @@ charts/
   mcp/            # the SquadRules MCP application chart
 .github/
   workflows/
-    chart-release.yml   # lint, package and publish charts on change
+    chart-release.yml      # lint, package and publish charts on change
+    integration.yml        # helm lint/template/unittest gate -> "Integration workflow passed"
+    security.yml           # trivy config scan gate -> "Security workflow passed"
+    automation-policy.yml  # conventional PR title gate -> "Automation policy passed"
 ```
 
 ## Cluster prerequisites
