@@ -1,0 +1,56 @@
+# Automation-policy gate for the SquadRules Helm charts.
+#
+# Mirrors SquadRules/mcp's automation-policy.yml check-name mechanism: a single
+# `policy` job whose `name:` is the exact required status-check context
+# ("Automation policy passed").
+#
+# mcp runs its conventional-title check via `node scripts/ci-automation.mjs title`
+# (repo-specific, needs package.json). This repo has no Node toolchain, so the
+# same policy is enforced with an inline regex step using mcp's exact Conventional
+# Commit pattern. That pattern is repo-independent, so the gate is equivalent.
+#
+# Enforced on: pull_request (PR title) and push to main (head commit subject,
+# which for squash merges carries the conventional PR title). Other events pass.
+name: Automation policy
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  policy:
+    name: Automation policy passed
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Conventional Commit title
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          set -euo pipefail
+          # Exact Conventional Commit pattern used by SquadRules/mcp
+          # (scripts/ci-automation.mjs conventionalTitle()).
+          regex='^(feat|fix|perf|revert|docs|style|refactor|test|build|ci|chore)(\([a-zA-Z0-9_./-]+\))?!?: \S.+$'
+
+          case "$EVENT_NAME" in
+            pull_request) subject="$PR_TITLE" ;;
+            push)         subject="$(printf '%s' "$COMMIT_MESSAGE" | head -n1)" ;;
+            *)            echo "No title to validate for event=$EVENT_NAME; passing."; exit 0 ;;
+          esac
+
+          echo "Validating ($EVENT_NAME): $subject"
+          if printf '%s' "$subject" | grep -Eq "$regex"; then
+            echo "Conventional Commit title OK."
+          else
+            echo "::error::Title must be a Conventional Commit (e.g. 'feat(charts): ...'), got: $subject"
+            exit 1
+          fi

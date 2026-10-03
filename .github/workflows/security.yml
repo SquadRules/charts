@@ -1,0 +1,110 @@
+# Security gate for the SquadRules Helm charts.
+#
+# Mirrors SquadRules/mcp's security.yml check-name mechanism: real scan job(s)
+# plus a final gate job whose `name:` is the exact required status-check context
+# ("Security workflow passed") that `needs:` the scan job.
+#
+# Scan: Trivy IaC/config scan (aquasecurity/trivy-action, config mode) over
+# charts/ — misconfiguration + secret detection on the chart templates.
+#
+# Severity threshold note: mcp gates its *container vulnerability* scans at
+# CRITICAL,HIGH. Config (misconfig) scanning is a different signal class — its
+# HIGH findings here are Kubernetes PSS-baseline policy preferences
+# (KSV-0118 default securityContext, KSV-0014 image tag policy), several of
+# which originate in vendored third-party subcharts (qdrant/valkey) that this
+# repo does not own. Gating on those would block on opinion noise, not risk.
+# So the BLOCKING gate fails on CRITICAL misconfigs/secrets (a real, currently
+# clean gate), while a second NON-BLOCKING pass reports HIGH+MEDIUM so the
+# findings stay visible in the run logs. Both passes scan the same tree.
+#
+# CRITICAL: the helm dependency build step is required. Trivy's helm scanner
+# SKIPS a chart whose declared dependencies are missing from charts/ — without
+# `helm dependency build` the config scan would silently inspect zero files and
+# pass vacuously. Building deps makes the scan real.
+name: Security
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    # Daily 02:00 UTC (parity with mcp security cadence)
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CHART_DIR: charts/mcp
+  HELM_VERSION: v4.0.5
+
+jobs:
+  trivy-config:
+    name: Trivy config scan (charts)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Add dependency repositories
+        run: |
+          set -euo pipefail
+          helm repo add qdrant https://qdrant.github.io/qdrant-helm
+          helm repo add valkey https://valkey.io/valkey-helm/
+          helm repo update
+
+      # REQUIRED so trivy's helm scanner parses the chart instead of skipping it.
+      - name: Build chart dependencies
+        run: helm dependency build "$CHART_DIR"
+
+      - name: Trivy config scan (blocking, CRITICAL misconfig + secrets)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: config
+          scan-ref: charts
+          scanners: misconfig,secret
+          severity: CRITICAL
+          exit-code: "1"
+          format: table
+
+      - name: Trivy config scan (report, HIGH+MEDIUM, non-blocking)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: config
+          scan-ref: charts
+          scanners: misconfig
+          severity: HIGH,MEDIUM
+          exit-code: "0"
+          format: table
+
+  # Merge gate: reported context is the job `name:` below.
+  security-pass:
+    name: Security workflow passed
+    needs: [trivy-config]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require all jobs
+        env:
+          TRIVY_CONFIG: ${{ needs.trivy-config.result }}
+        run: |
+          set -euo pipefail
+          echo "trivy-config=$TRIVY_CONFIG"
+          test "$TRIVY_CONFIG" = "success"
+          echo "All security jobs passed."
