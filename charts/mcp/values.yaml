@@ -39,8 +39,7 @@ ha:
 
 app:
   enabled: true
-  # Existing Kairos deployments MUST retain their original app.name on upgrade.
-  # Kubernetes Deployment selectors are immutable. See MIGRATION.md.
+  # Kubernetes Deployment selectors are immutable once the Deployment exists.
   name: "squadrules-mcp"
   replicaCount: 2
   port: 3000
@@ -57,7 +56,6 @@ app:
   auth:
     enabled: false
     # Realm and clientId defaults match files/squadrules-realm.json.
-    # Preserve old values explicitly when upgrading a Kairos installation.
     realm: "squadrules"
     clientId: "squadrules-mcp"
     callbackBaseUrl: ""

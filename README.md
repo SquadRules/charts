@@ -50,7 +50,6 @@ Branch protection currently requires **administrator configuration**: require
 the checks `Automation policy passed`, `Integration workflow passed`, and
 `Security workflow passed` in the `main` ruleset. After the first successful
 GHCR publication, verify that the package visibility permits public pulls.
-See [migration guidance](charts/mcp/MIGRATION.md) for older Kairos installations.
 
 ## Scope and provenance
 
@@ -58,8 +57,4 @@ This repository owns the chart and its release workflow. Cluster operators,
 Gateway API controllers, certificate issuance, and secret distribution are
 cluster prerequisites—not bundled as operator installers.
 
-The chart was extracted from
-[`jakub-plichcinski/kairos-mcp/helm/kairos-mcp`](https://github.com/jakub-plichcinski/kairos-mcp/tree/main/helm/kairos-mcp).
-That tree is historical; make chart changes here rather than in the former
-application repository. Application source lives in
-[`SquadRules/mcp`](https://github.com/SquadRules/mcp).
+Application source lives in [`SquadRules/mcp`](https://github.com/SquadRules/mcp).

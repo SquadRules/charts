@@ -4,12 +4,6 @@ A Helm chart for the [SquadRules MCP server](https://github.com/SquadRules/mcp).
 It deploys the application and the Qdrant subchart by default, with optional
 Valkey, Ollama, Gateway API routes, metrics and operator-managed services.
 
-This is the maintained chart extracted from the former Kairos project. The
-default resource names and optional Keycloak realm are **SquadRules** names.
-Existing Kairos releases must follow [MIGRATION.md](MIGRATION.md) before
-upgrading: deployment selectors and Keycloak identities must not be renamed
-in place.
-
 ## Quick start
 
 ```sh
@@ -51,8 +45,7 @@ Override to `soft` or `none` for a single-node test cluster.
    `app.keycloakInternalUrl` as appropriate. The bundled realm
    `files/squadrules-realm.json` defines the `squadrules-mcp` and
    `squadrules-cli` clients. Keycloak realm import requires the operator
-   and a managed Keycloak instance; importing into an existing realm is not a
-   safe in-place migration.
+   and a managed Keycloak instance.
 5. `credentials.autoGenerate` produces an internal Secret using an install
    hook. For declarative/GitOps deployments, consider
    `credentials.existingSecret` or `app.existingSecret` and provision Secrets

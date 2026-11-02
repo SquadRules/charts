@@ -57,41 +57,15 @@ Explicit .Values.gateway.mode wins; "auto" picks based on:
 {{- end -}}
 {{- end -}}
 
-{{/*
-Legacy credentials Secret name. MUST remain "kairos-mcp-credentials":
-existing installations created this Secret and the lookup-based resolution
-below depends on the exact name to preserve bindings on upgrade.
-*/}}
-{{- define "mcp.credentialsLegacySecretName" -}}
-{{- printf "kairos-mcp-credentials" -}}
-{{- end -}}
-
-{{- define "mcp.credentialsPreferredSecretName" -}}
+{{/* Resolve a configured Secret or the name based on this Helm release. */}}
+{{- define "mcp.credentialsSecretName" -}}
+{{- $existing := default "" .Values.credentials.existingSecret | trim -}}
 {{- $name := default "" .Values.credentials.name | trim -}}
-{{- if $name -}}
+{{- if $existing -}}
+{{- $existing -}}
+{{- else if $name -}}
 {{- $name -}}
 {{- else -}}
 {{- printf "%s-credentials" .Release.Name -}}
-{{- end -}}
-{{- end -}}
-
-{{- define "mcp.credentialsSecretName" -}}
-{{- $existing := default "" .Values.credentials.existingSecret | trim -}}
-{{- if $existing -}}
-{{- $existing -}}
-{{- else -}}
-{{- $preferred := include "mcp.credentialsPreferredSecretName" . -}}
-{{- $legacy := include "mcp.credentialsLegacySecretName" . -}}
-{{- $preferredObj := lookup "v1" "Secret" .Release.Namespace $preferred -}}
-{{- if $preferredObj -}}
-{{- $preferred -}}
-{{- else -}}
-{{- $legacyObj := lookup "v1" "Secret" .Release.Namespace $legacy -}}
-{{- if $legacyObj -}}
-{{- $legacy -}}
-{{- else -}}
-{{- $preferred -}}
-{{- end -}}
-{{- end -}}
 {{- end -}}
 {{- end -}}

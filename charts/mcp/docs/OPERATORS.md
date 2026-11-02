@@ -33,6 +33,3 @@ Gateway API requires a GatewayClass controller; cert-manager is only necessary
 when `gateway.tls.certManager.enabled` is enabled. Monitoring custom resources
 require Prometheus Operator CRDs. None of these are installed by this chart.
 
-Historical operator and ngrok manifests are archived in the
-[original Kairos helm directory](https://github.com/jakub-plichcinski/kairos-mcp/tree/main/helm)
-for reference only. They are not maintained as SquadRules operator installers.
