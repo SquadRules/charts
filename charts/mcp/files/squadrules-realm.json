@@ -1,6 +1,6 @@
 {
-  "id": "kairos",
-  "realm": "kairos",
+  "id": "squadrules",
+  "realm": "squadrules",
   "enabled": true,
   "registrationAllowed": false,
   "loginWithEmailAllowed": true,
@@ -25,8 +25,8 @@
   ],
   "clientScopes": [
     {
-      "name": "kairos-groups",
-      "description": "Group membership claim — required for KAIROS space isolation",
+      "name": "squadrules-groups",
+      "description": "Group membership claim — required for SquadRules space isolation",
       "protocol": "openid-connect",
       "attributes": {
         "include.in.token.scope": "true",
@@ -34,7 +34,7 @@
       },
       "protocolMappers": [
         {
-          "name": "kairos-oidc-groups",
+          "name": "squadrules-oidc-groups",
           "protocol": "openid-connect",
           "protocolMapper": "oidc-group-membership-mapper",
           "consentRequired": false,
@@ -94,7 +94,7 @@
           }
         },
         {
-          "name": "kairos-groups-always",
+          "name": "squadrules-groups-always",
           "protocol": "openid-connect",
           "protocolMapper": "oidc-group-membership-mapper",
           "consentRequired": false,
@@ -129,7 +129,7 @@
     "web-origins",
     "acr",
     "basic",
-    "kairos-groups",
+    "squadrules-groups",
     "openid",
     "offline_access"
   ],
@@ -137,7 +137,7 @@
   "roles": {
     "realm": [
       {
-        "name": "default-roles-kairos",
+        "name": "default-roles-squadrules",
         "description": "${role_default-roles}",
         "composite": true,
         "composites": {
@@ -154,15 +154,15 @@
     ]
   },
   "defaultRole": {
-    "name": "default-roles-kairos",
+    "name": "default-roles-squadrules",
     "description": "${role_default-roles}",
     "composite": true,
     "clientRole": false
   },
   "clients": [
     {
-      "clientId": "kairos-mcp",
-      "name": "KAIROS MCP",
+      "clientId": "squadrules-mcp",
+      "name": "SquadRules MCP",
       "enabled": true,
       "publicClient": true,
       "standardFlowEnabled": true,
@@ -170,17 +170,17 @@
       "redirectUris": [
         "http://127.0.0.1/auth/callback",
         "http://127.0.0.1/auth/continue-signin",
-        "__KAIROS_PUBLIC_ORIGIN__/auth/callback",
-        "__KAIROS_PUBLIC_ORIGIN__/auth/continue-signin"
+        "__SQUADRULES_PUBLIC_ORIGIN__/auth/callback",
+        "__SQUADRULES_PUBLIC_ORIGIN__/auth/continue-signin"
       ],
       "webOrigins": [
         "http://127.0.0.1",
-        "__KAIROS_PUBLIC_ORIGIN__"
+        "__SQUADRULES_PUBLIC_ORIGIN__"
       ],
-      "defaultClientScopes": ["basic", "kairos-groups", "offline_access", "openid", "email", "profile"],
+      "defaultClientScopes": ["basic", "squadrules-groups", "offline_access", "openid", "email", "profile"],
       "optionalClientScopes": [],
       "attributes": {
-        "post.logout.redirect.uris": "http://127.0.0.1/auth/continue-signin##__KAIROS_PUBLIC_ORIGIN__/auth/continue-signin",
+        "post.logout.redirect.uris": "http://127.0.0.1/auth/continue-signin##__SQUADRULES_PUBLIC_ORIGIN__/auth/continue-signin",
         "logout.confirmation.enabled": "false"
       },
       "protocolMappers": [
@@ -199,15 +199,15 @@
       ]
     },
     {
-      "clientId": "kairos-cli",
-      "name": "KAIROS CLI / MCP host (public PKCE)",
+      "clientId": "squadrules-cli",
+      "name": "SquadRules CLI / MCP host (public PKCE)",
       "enabled": true,
       "publicClient": true,
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
-      "redirectUris": ["http://localhost:*", "http://localhost:*/callback", "http://localhost:*/callback/*", "http://localhost:*/*", "http://127.0.0.1:*", "http://127.0.0.1:*/callback", "http://127.0.0.1:*/callback/*", "__KAIROS_PUBLIC_ORIGIN__/*"],
-      "webOrigins": ["http://localhost", "__KAIROS_PUBLIC_ORIGIN__"],
-      "defaultClientScopes": ["basic", "kairos-groups", "offline_access", "openid", "email", "profile"],
+      "redirectUris": ["http://localhost:*", "http://localhost:*/callback", "http://localhost:*/callback/*", "http://localhost:*/*", "http://127.0.0.1:*", "http://127.0.0.1:*/callback", "http://127.0.0.1:*/callback/*", "__SQUADRULES_PUBLIC_ORIGIN__/*"],
+      "webOrigins": ["http://localhost", "__SQUADRULES_PUBLIC_ORIGIN__"],
+      "defaultClientScopes": ["basic", "squadrules-groups", "offline_access", "openid", "email", "profile"],
       "optionalClientScopes": [],
       "attributes": {
         "pkce.code.challenge.method": "S256"
@@ -236,7 +236,7 @@
         "subType": "anonymous",
         "config": {
           "allow-default-scopes": ["true"],
-          "allowed-client-scopes": ["roles", "acr", "phone", "profile", "kairos-groups", "offline_access", "address", "basic", "email", "openid", "web-origins"]
+          "allowed-client-scopes": ["roles", "acr", "phone", "profile", "squadrules-groups", "offline_access", "address", "basic", "email", "openid", "web-origins"]
         }
       },
       {

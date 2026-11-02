@@ -53,7 +53,7 @@ spec:
       backendRefs:
         - group: ""
           kind: Service
-          name: {{ .Values.app.name | default "kairos-mcp" }}
+          name: {{ .Values.app.name | default "squadrules-mcp" }}
           port: {{ .Values.app.port }}
           weight: 1
 {{- end }}

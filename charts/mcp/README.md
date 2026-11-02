@@ -1,88 +1,97 @@
-# KAIROS MCP Helm chart (`helm/kairos-mcp`)
+# SquadRules MCP Helm chart
 
-Deploys **Qdrant** and the optional **kairos-mcp** app. Redis, Keycloak, and
-Postgres can be external (your operators) or created by this chart through
-operator CRs.
+A Helm chart for the [SquadRules MCP server](https://github.com/SquadRules/mcp).
+It deploys the application and the Qdrant subchart by default, with optional
+Valkey, Ollama, Gateway API routes, metrics and operator-managed services.
 
-## Prerequisites
+## Quick start
 
-- Kubernetes cluster
-- **Operators** installed when using chart-created clusters (see [docs/OPERATORS.md](docs/OPERATORS.md)):
-  - Redis (Spotahome redis-operator)
-  - Keycloak operator
-  - Postgres (Percona PostgreSQL operator)
-
-## Credentials
-
-The chart creates only internal bootstrap secrets. When you enable the app, you
-must still provide an embedding provider configuration.
-
-- Set `credentials.autoGenerate: true` (default): a pre-install hook creates a
-  Secret with random `redis-password`, `keycloak-db-password`, and
-  `session-secret`. Use `credentials.existingSecret` to use your own.
-- Set `app.extraEnv` to inject your embedding provider. Use either
-  `OPENAI_API_KEY` plus `OPENAI_EMBEDDING_MODEL`, or `TEI_BASE_URL` plus
-  `TEI_MODEL`. Prefer `valueFrom.secretKeyRef`.
-- Set `app.qdrantUrl`, `app.keycloakUrl`, and `app.keycloakInternalUrl`.
-  Set `app.redisUrl` only when you want Redis.
-- **Browser OIDC:** set `app.auth.enabled: true`, `app.auth.realm` (default
-  `kairos`), `app.auth.clientId` (default `kairos-mcp`), and
-  `app.auth.callbackBaseUrl` to your **public app origin** (e.g.
-  `https://your-host.ngrok-free.dev`, no trailing slash). The app needs
-  `session-secret` in the credentials Secret (hook or `existingSecret`).
-- **Realm import:** set `keycloakRealmImport.enabled: true` to apply a
-  `KeycloakRealmImport` for `kairos` with `kairos-mcp` / `kairos-cli`
-  clients. Redirect URIs use `https://<gateway.hostname>/…` unless you set
-  `keycloakRealmImport.publicHost`. If the realm already exists, reconcile or
-  adjust clients in Keycloak Admin instead of duplicating imports.
-
-## Cluster configuration
-
-- **Use your own clusters:** set `redisCluster.useOwnCluster`, `keycloakInstance.useOwnCluster`, or `postgresCluster.useOwnCluster` to `true` and set app.*Url. No CRs are created.
-- **Chart creates clusters:** set `redisCluster.enabled`,
-  `keycloakInstance.enabled`, or `postgresCluster.enabled` to `true`.
-  Operators must be installed first, and must be scoped to the release namespace (for example via an OLM `OperatorGroup`).
-
-## Operator pre-check
-
-When any of `redisCluster.enabled`, `keycloakInstance.enabled`, or `postgresCluster.enabled` is `true`, a **pre-install hook** checks that required operator CRDs exist (e.g. `redisfailovers.databases.spotahome.com`, `keycloaks.k8s.keycloak.org`, `perconapgclusters.pgv2.percona.com`). See [docs/OPERATORS.md](docs/OPERATORS.md).
-
-## Gateway API
-
-Set `gateway.enabled: true` and `gateway.hostname`. If `gateway.gatewayClassName`
-is empty (the default), the chart auto-detects the first available GatewayClass in
-the cluster; set it explicitly (e.g. `ngrok`, `istio`, `traefik`) to skip autodetection.
-If no GatewayClass exists and `gateway.ingressClassName` is set, the chart falls back
-to ingress mode. The app route renders only when `app.enabled=true`.
-Keycloak is exposed at `https://<hostname>/sso`. For the repo-local k3d flow,
-`helm/.dev/k3b.sh` installs operators, ngrok, `GatewayClass/ngrok`, and by default
-the `kairos` Helm release (`helm/values.dev.yaml`) so the MCP app and Keycloak get
-`HTTPRoute`s on that hostname. Set `KAIROS_NGROK_HOSTNAME` if your ngrok domain
-differs from `gateway.hostname` in values. Use `KAIROS_SKIP_CHART=1` for
-operators only.
-TLS via cert-manager is used only when
-`gateway.tls.certManager.enabled=true`.
-
-## Monitoring (ServiceMonitor and alerts)
-
-Requires [Prometheus Operator](https://prometheus-operator.dev/). App exposes `/metrics` on `app.metricsPort` (9090); Qdrant on port 6333. Enable `monitoring.serviceMonitor.app.enabled` and `monitoring.serviceMonitor.qdrant.enabled`; set `release` (e.g. `prometheus`) so Prometheus selects them. Optional: `monitoring.serviceMonitor.redis` / `keycloak` / `postgres` with `serviceNamespace` and `serviceSelector`. Set `monitoring.prometheusRule.enabled: true` for default alerts (KAIROSAppDown, KAIROSAppHighErrorRate, KAIROSQdrantDown); set `monitoring.prometheusRule.release` for selection.
-
-## Install
-
-```bash
-helm dependency update
-helm install kairos . -n kairos --create-namespace -f my-values.yaml
+```sh
+helm repo add qdrant https://qdrant.github.io/qdrant-helm
+helm repo add valkey https://valkey.io/valkey-helm/
+helm dependency build charts/mcp
+helm template squadrules charts/mcp --namespace squadrules
 ```
 
-When `app.enabled` is true, the process must supply an embedding provider. The
-chart supports OpenAI via `app.embedding.openai.existingSecret` (recommended)
-or `app.extraEnv` for TEI (`TEI_BASE_URL`, `TEI_MODEL`).
+To install the published OCI chart, choose a released chart version:
 
-For the repo-local k3d profile, `./helm/.dev/k3b.sh` applies the full chart by
-default (Ollama embeddings, no API key required). See `helm/values.dev.yaml`
-(production-oriented: `helm/values.prod.yaml`).
+```sh
+helm upgrade --install squadrules oci://ghcr.io/squadrules/charts/mcp \
+  --version 0.16.0 -n squadrules --create-namespace -f my-values.yaml
+```
 
-In `my-values.yaml`, set at least `app.qdrantUrl`, `app.keycloakUrl`,
-`app.keycloakInternalUrl`, and embedding or `app.extraEnv` when you enable the
-app. Set `app.redisUrl` only when you configure Redis. Set
-`app.auth.callbackBaseUrl` when using auth.
+The `0.16.0` example is the target version for this change; verify publication
+in the repository Actions tab before installing from GHCR.
+
+## Required configuration
+
+The example `values.yaml` is deliberately not a fully configured deployment.
+The default topology requests two MCP replicas and three Qdrant replicas;
+`ha.antiAffinity.mode: hard` can prevent scheduling on small clusters.
+Override to `soft` or `none` for a single-node test cluster.
+
+1. Configure embeddings. Use `app.embedding.openai.existingSecret` for an
+   existing Secret containing `OPENAI_API_KEY`, or configure your own embedding
+   provider through `app.extraEnv` (for example `TEI_BASE_URL` and `TEI_MODEL`).
+   Never put API keys in committed values files.
+2. Set `app.qdrantUrl` when the application should use the chart's Qdrant
+   service or your external instance. See rendered service names.
+3. Set `gateway.hostname` and `gateway.gatewayClassName` (and TLS as required)
+   if using Gateway API. `gateway.createGateway` defaults to false; supply an
+   existing Gateway or enable creation. Template-only rendering cannot discover
+   cluster GatewayClass objects via `lookup`.
+4. When enabling OIDC, set `app.auth.enabled`,
+   `app.auth.callbackBaseUrl`, `app.keycloakUrl` and
+   `app.keycloakInternalUrl` as appropriate. The bundled realm
+   `files/squadrules-realm.json` defines the `squadrules-mcp` and
+   `squadrules-cli` clients. Keycloak realm import requires the operator
+   and a managed Keycloak instance.
+5. `credentials.autoGenerate` produces an internal Secret using an install
+   hook. For declarative/GitOps deployments, consider
+   `credentials.existingSecret` or `app.existingSecret` and provision Secrets
+   independently. Do not treat auto-generated credentials as a backup strategy.
+
+Example values (illustrative addresses; replace with your own):
+
+```yaml
+app:
+  image:
+    repository: quay.io/squadrules/mcp
+    tag: "5.14.3"
+  qdrantUrl: http://squadrules-qdrant:6333
+  embedding:
+    openai:
+      existingSecret: squadrules-openai
+gateway:
+  enabled: false
+```
+
+## Optional operator CRs
+
+Redis, Keycloak and Percona PostgreSQL operators are **not** installed by
+this chart. See [operator prerequisites](docs/OPERATORS.md). Switch on
+`redisCluster.enabled`, `keycloakInstance.enabled` or
+`postgresCluster.enabled` only after installing their CRDs and configuring
+the operator namespace permissions. Use `*.useOwnCluster: true` and the
+`app.*Url` settings for external clusters.
+
+## Monitoring
+
+ServiceMonitor and PrometheusRule resources require Prometheus Operator CRDs.
+Enable the relevant `monitoring.serviceMonitor.*.enabled` switches. The
+default alerts reference `squadrules_http_requests_total`, the metric
+exported by the current application. Custom rules can be supplied under
+`monitoring.prometheusRule.rules`.
+
+## Tests
+
+```sh
+helm lint charts/mcp --strict
+helm template squadrules charts/mcp --namespace squadrules
+helm unittest charts/mcp   # helm-unittest plugin required
+helm package charts/mcp -d dist
+```
+
+The CI workflows perform these checks on pull requests; the OCI publish
+workflow only runs for trusted `main` events. Chart version and image version
+are separate: a chart release can deploy a fixed version of SquadRules MCP.

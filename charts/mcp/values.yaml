@@ -4,9 +4,9 @@
 # ------------------------------------------------------------------------------
 
 global:
-  name: "kairos"
+  name: "squadrules"
   namespace: ""
-  hostname: "kairos.example.com"
+  hostname: "squadrules.example.com"
 
 credentials:
   autoGenerate: true
@@ -39,17 +39,14 @@ ha:
 
 app:
   enabled: true
-  # IMPORTANT: app.name defaults to "kairos-mcp" for backward compatibility.
-  # This value is used in Deployment spec.selector.matchLabels which is IMMUTABLE
-  # on existing Kubernetes Deployments. Changing it would break helm upgrade for
-  # all existing installations. New installations may override this value.
-  name: "kairos-mcp"
+  # Kubernetes Deployment selectors are immutable once the Deployment exists.
+  name: "squadrules-mcp"
   replicaCount: 2
   port: 3000
   metricsPort: 9090
   image:
     repository: "quay.io/squadrules/mcp"
-    tag: "4.8.6"
+    tag: "5.14.3"
     pullPolicy: "IfNotPresent"
   existingSecret: ""
   redisUrl: ""
@@ -58,10 +55,9 @@ app:
   keycloakInternalUrl: ""
   auth:
     enabled: false
-    # Realm and clientId defaults match the bundled Keycloak realm (files/kairos-realm.json)
-    # and existing deployed configurations. Override for your own Keycloak setup.
-    realm: "kairos"
-    clientId: "kairos-mcp"
+    # Realm and clientId defaults match files/squadrules-realm.json.
+    realm: "squadrules"
+    clientId: "squadrules-mcp"
     callbackBaseUrl: ""
     # JWT `groups` prefix allowlist (see src/config OIDC_GROUPS_ALLOWLIST). Empty = omit env (app deny-all for groups).
     # Default matches bundled realm paths under /shared/…
@@ -96,7 +92,7 @@ gateway:
   enabled: true
   mode: "auto"
   createGateway: false
-  gatewayName: "kairos-gateway"
+  gatewayName: "squadrules-gateway"
   existingGatewayName: ""
   existingGatewayNamespace: ""
   # Gateway API gatewayClassName. Empty string triggers cluster autodetection:
@@ -169,7 +165,7 @@ redisCluster:
   enabled: false
   useOwnCluster: false
   namespace: ""
-  name: "kairos-redis"
+  name: "squadrules-redis"
   sentinelReplicas: 3
   replicas: 3
   customSpec: {}
@@ -234,9 +230,9 @@ keycloakInstance:
 # Requires keycloakInstance.enabled and Keycloak operator.
 keycloakRealmImport:
   enabled: false
-  name: "kairos-realm-import"
-  realmFile: "kairos-realm.json"
-  # Preferred explicit public origin (scheme + host [+ optional port]), e.g. http://localhost or https://kairos.example.com.
+  name: "squadrules-realm-import"
+  realmFile: "squadrules-realm.json"
+  # Preferred explicit public origin (scheme + host [+ optional port]), e.g. http://localhost or https://squadrules.example.com.
   # If empty, template falls back to app.auth.callbackBaseUrl, then publicHost/gateway.hostname with inferred scheme.
   publicBaseUrl: ""
   # If empty, uses gateway.hostname for https://… redirect URIs / webOrigins in the bundled realm JSON.
@@ -249,11 +245,11 @@ keycloakDcrCleanup:
   enabled: false
   # Realms to scan for stale DCR clients.
   realms:
-    - kairos
+    - squadrules
   # Seeded clients that are never pruned (clientId exact match).
   protectedClients:
-    - kairos-mcp
-    - kairos-cli
+    - squadrules-mcp
+    - squadrules-cli
   # Remove clients first seen more than N days ago (that are not in protectedClients).
   staleAfterDays: 30
   # Cron schedule (default: weekly Sunday 03:00).
@@ -281,7 +277,7 @@ postgresCluster:
   enabled: false
   useOwnCluster: false
   namespace: ""
-  name: "kairos-postgres"
+  name: "squadrules-postgres"
   crVersion: "2.8.2"
   image: "docker.io/percona/percona-distribution-postgresql:17.7-2@sha256:b48abfa1f83026a1beea75da27e49e01cff33e344ecdd8d69c4b4cb674b04285"
   pgBackRestImage: "docker.io/percona/percona-pgbackrest:2.57.0-1@sha256:4bff26ec1777a748abddb0845fe0e6d06e5f7409d4dd72bcb8c9bba1e746174c"

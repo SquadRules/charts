@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""KAIROS DCR Stale Client Cleanup.
+"""SquadRules DCR Stale Client Cleanup.
 
 Periodically removes stale dynamically-registered Keycloak clients.
 Uses only Python stdlib — no pip packages needed.
@@ -198,7 +198,7 @@ def main():
     now = datetime.now(timezone.utc)
     cutoff = now - timedelta(days=stale_days)
 
-    print("=== KAIROS DCR Stale Client Cleanup ===")
+    print("=== SquadRules DCR Stale Client Cleanup ===")
     print(f"Keycloak: {keycloak_base}")
     print(f"Realms: {realms}")
     print(f"Stale after: {stale_days} days (before {cutoff.isoformat()})")

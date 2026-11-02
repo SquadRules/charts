@@ -11,7 +11,7 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
-  name: {{ $gw.gatewayName | default "kairos-gateway" }}
+  name: {{ $gw.gatewayName | default "squadrules-gateway" }}
   labels:
     app.kubernetes.io/part-of: {{ .Chart.Name | quote }}
 spec:

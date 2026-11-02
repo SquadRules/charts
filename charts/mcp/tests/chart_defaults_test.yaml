@@ -30,8 +30,8 @@ tests:
     set:
       gateway.enabled: true
       gateway.createGateway: true
-      gateway.hostname: "kairos.example.com"
-      gateway.gatewayName: "kairos-gateway"
+      gateway.hostname: "squadrules.example.com"
+      gateway.gatewayName: "squadrules-gateway"
       gateway.gatewayClassName: "ngrok"
       gateway.tls.certManager.enabled: false
     asserts:
@@ -44,7 +44,7 @@ tests:
     set:
       gateway.enabled: true
       gateway.createGateway: true
-      gateway.hostname: "kairos.example.com"
+      gateway.hostname: "squadrules.example.com"
     asserts:
       - hasDocuments:
           count: 0
@@ -52,7 +52,7 @@ tests:
     set:
       gateway.enabled: true
       gateway.createGateway: true
-      gateway.hostname: "kairos.example.com"
+      gateway.hostname: "squadrules.example.com"
       gateway.gatewayClassName: "istio"
       gateway.infrastructureAnnotations:
         proxy.istio.io/config: '{"seccompProfile":{"type":"RuntimeDefault"}}'
@@ -69,7 +69,7 @@ tests:
   - it: renders HTTPRoute when gateway class is set
     set:
       gateway.enabled: true
-      gateway.hostname: "kairos.example.com"
+      gateway.hostname: "squadrules.example.com"
       gateway.gatewayClassName: "ngrok"
       app.enabled: true
     asserts:
@@ -77,11 +77,11 @@ tests:
           of: HTTPRoute
       - equal:
           path: spec.parentRefs[0].name
-          value: kairos-gateway
+          value: squadrules-gateway
   - it: renders CORS ResponseHeaderModifier when cors.enabled
     set:
       gateway.enabled: true
-      gateway.hostname: "kairos.example.com"
+      gateway.hostname: "squadrules.example.com"
       gateway.gatewayClassName: "ngrok"
       gateway.routes.mcp.cors.enabled: true
       app.enabled: true
@@ -105,7 +105,7 @@ tests:
   - it: does not render CORS filter when cors disabled
     set:
       gateway.enabled: true
-      gateway.hostname: "kairos.example.com"
+      gateway.hostname: "squadrules.example.com"
       gateway.gatewayClassName: "ngrok"
       app.enabled: true
     asserts:
@@ -129,3 +129,62 @@ tests:
       - equal:
           path: spec.ports[0].port
           value: 3000
+
+---
+suite: SquadRules release defaults
+templates:
+  - mcp-deployment.yaml
+  - mcp-service.yaml
+tests:
+  - it: deploys the SquadRules MCP image and stable application label
+    template: mcp-deployment.yaml
+    asserts:
+      - equal:
+          path: metadata.name
+          value: squadrules-mcp
+      - equal:
+          path: spec.template.spec.containers[0].name
+          value: squadrules-mcp
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "quay[.]io/squadrules/mcp:[0-9]+[.][0-9]+[.][0-9]+"
+  - it: exposes the branded app service
+    template: mcp-service.yaml
+    asserts:
+      - equal:
+          path: metadata.name
+          value: squadrules-mcp
+---
+suite: SquadRules metrics
+templates:
+  - prometheusrule.yaml
+tests:
+  - it: uses the metric name exposed by SquadRules MCP
+    set:
+      monitoring.prometheusRule.enabled: true
+    asserts:
+      - matchRegex:
+          path: spec.groups[0].rules[1].expr
+          pattern: squadrules_http_requests_total
+---
+suite: SquadRules OIDC realm
+templates:
+  - keycloak-realm-import.yaml
+tests:
+  - it: creates the branded realm with substituted public redirect URI
+    set:
+      keycloakInstance.enabled: true
+      keycloakRealmImport.enabled: true
+      keycloakRealmImport.publicBaseUrl: https://squadrules.example.com
+    asserts:
+      - isKind:
+          of: KeycloakRealmImport
+      - equal:
+          path: spec.realm.realm
+          value: squadrules
+      - equal:
+          path: spec.realm.clients[0].clientId
+          value: squadrules-mcp
+      - contains:
+          path: spec.realm.clients[0].redirectUris
+          content: https://squadrules.example.com/auth/callback
