@@ -170,17 +170,17 @@
       "redirectUris": [
         "http://127.0.0.1/auth/callback",
         "http://127.0.0.1/auth/continue-signin",
-        "__SquadRules_PUBLIC_ORIGIN__/auth/callback",
-        "__SquadRules_PUBLIC_ORIGIN__/auth/continue-signin"
+        "__SQUADRULES_PUBLIC_ORIGIN__/auth/callback",
+        "__SQUADRULES_PUBLIC_ORIGIN__/auth/continue-signin"
       ],
       "webOrigins": [
         "http://127.0.0.1",
-        "__SquadRules_PUBLIC_ORIGIN__"
+        "__SQUADRULES_PUBLIC_ORIGIN__"
       ],
       "defaultClientScopes": ["basic", "squadrules-groups", "offline_access", "openid", "email", "profile"],
       "optionalClientScopes": [],
       "attributes": {
-        "post.logout.redirect.uris": "http://127.0.0.1/auth/continue-signin##__SquadRules_PUBLIC_ORIGIN__/auth/continue-signin",
+        "post.logout.redirect.uris": "http://127.0.0.1/auth/continue-signin##__SQUADRULES_PUBLIC_ORIGIN__/auth/continue-signin",
         "logout.confirmation.enabled": "false"
       },
       "protocolMappers": [
@@ -205,8 +205,8 @@
       "publicClient": true,
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
-      "redirectUris": ["http://localhost:*", "http://localhost:*/callback", "http://localhost:*/callback/*", "http://localhost:*/*", "http://127.0.0.1:*", "http://127.0.0.1:*/callback", "http://127.0.0.1:*/callback/*", "__SquadRules_PUBLIC_ORIGIN__/*"],
-      "webOrigins": ["http://localhost", "__SquadRules_PUBLIC_ORIGIN__"],
+      "redirectUris": ["http://localhost:*", "http://localhost:*/callback", "http://localhost:*/callback/*", "http://localhost:*/*", "http://127.0.0.1:*", "http://127.0.0.1:*/callback", "http://127.0.0.1:*/callback/*", "__SQUADRULES_PUBLIC_ORIGIN__/*"],
+      "webOrigins": ["http://localhost", "__SQUADRULES_PUBLIC_ORIGIN__"],
       "defaultClientScopes": ["basic", "squadrules-groups", "offline_access", "openid", "email", "profile"],
       "optionalClientScopes": [],
       "attributes": {

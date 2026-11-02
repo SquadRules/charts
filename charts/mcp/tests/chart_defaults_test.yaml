@@ -185,3 +185,25 @@ tests:
       - matchRegex:
           path: spec.groups[0].rules[1].expr
           pattern: squadrules_http_requests_total
+---
+suite: SquadRules OIDC realm
+templates:
+  - keycloak-realm-import.yaml
+tests:
+  - it: creates the branded realm with substituted public redirect URI
+    set:
+      keycloakInstance.enabled: true
+      keycloakRealmImport.enabled: true
+      keycloakRealmImport.publicBaseUrl: https://squadrules.example.com
+    asserts:
+      - isKind:
+          of: KeycloakRealmImport
+      - equal:
+          path: spec.realm.realm
+          value: squadrules
+      - equal:
+          path: spec.realm.clients[0].clientId
+          value: squadrules-mcp
+      - contains:
+          path: spec.realm.clients[0].redirectUris
+          content: https://squadrules.example.com/auth/callback
