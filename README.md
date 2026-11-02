@@ -1,68 +1,65 @@
 # SquadRules Helm Charts
 
-This repository hosts the official [Helm](https://helm.sh) charts for
-[SquadRules](https://github.com/SquadRules). Charts are packaged and published
-as OCI artifacts to the GitHub Container Registry.
+Official Helm charts for [SquadRules](https://github.com/SquadRules), published as
+versioned OCI artifacts in GitHub Container Registry (GHCR).
 
-## Charts
+| Chart | Source | Purpose |
+| --- | --- | --- |
+| `mcp` | [charts/mcp](charts/mcp) | SquadRules MCP server, Qdrant, optional Valkey and operator-managed Keycloak/PostgreSQL/Redis |
 
-| Chart | Path | Description |
-|---|---|---|
-| `mcp` | [`charts/mcp`](charts/mcp) | Deploys the SquadRules MCP server with Qdrant, optional Redis/Valkey, Keycloak and Postgres operator CRs. |
+## Install
 
-## Usage
-
-Add the OCI registry and install a chart:
-
-```bash
-helm install mcp oci://ghcr.io/squadrules/charts/mcp --version <chart-version>
+```sh
+helm install squadrules oci://ghcr.io/squadrules/charts/mcp \
+  --version 0.16.0 --namespace squadrules --create-namespace \
+  -f my-values.yaml
 ```
 
-Or reference it directly:
+The default chart is an example topology, not a production-ready installation.
+Review [configuration and prerequisites](charts/mcp/README.md), especially
+embedding-provider credentials, gateway settings, replica placement, and
+operator CRDs. The application image is pinned to the published version used by
+the [containers](https://github.com/SquadRules/containers) repository; chart
+versions are independent of application versions.
 
-```bash
-helm upgrade --install mcp oci://ghcr.io/squadrules/charts/mcp \
-  --version <chart-version> \
-  --namespace squadrules --create-namespace
-```
+For development from this repository:
 
-## Chart dependencies
-
-The `mcp` chart depends on the `qdrant` and `valkey` subcharts. Before linting,
-templating or packaging locally, add the upstream repositories and build the
-dependencies:
-
-```bash
+```sh
 helm repo add qdrant https://qdrant.github.io/qdrant-helm
 helm repo add valkey https://valkey.io/valkey-helm/
 helm dependency build charts/mcp
+helm lint charts/mcp --strict
+helm template squadrules charts/mcp --namespace squadrules
 ```
 
-## Repository layout
+## CI and releases
 
-```
-charts/
-  mcp/            # the SquadRules MCP application chart
-.github/
-  workflows/
-    chart-release.yml      # lint, package and publish charts on change
-    integration.yml        # helm lint/template/unittest gate -> "Integration workflow passed"
-    security.yml           # trivy config scan gate -> "Security workflow passed"
-    automation-policy.yml  # conventional PR title gate -> "Automation policy passed"
-```
+- Pull requests: strict Helm lint, template/render validation, helm-unittest,
+  packaging smoke test, security config scan, and conventional PR-title gate.
+- `main`: the same checks continue to run on pushes; security scanning also
+  runs on a schedule.
+- Releases: changing `charts/mcp/Chart.yaml` on `main` publishes the
+  corresponding version to `oci://ghcr.io/squadrules/charts`.
+  A published version is immutable in this release process; bump the chart
+  version whenever packaging changes. Manual dispatch is available for retrying
+  a failed first publication.
+- Workflow publishing uses `GITHUB_TOKEN` with `packages: write`; no long-lived
+  personal access token is required for publishing in the same organization.
 
-## Cluster prerequisites
+Branch protection currently requires **administrator configuration**: require
+the checks `Automation policy passed`, `Integration workflow passed`, and
+`Security workflow passed` in the `main` ruleset. After the first successful
+GHCR publication, verify that the package visibility permits public pulls.
+See [migration guidance](charts/mcp/MIGRATION.md) for older Kairos installations.
 
-The `mcp` chart expects certain operators (Keycloak, Percona Postgres, Redis)
-and cluster infrastructure (e.g. an ngrok GatewayClass) to be pre-installed
-when the corresponding chart values are enabled. Operator and infrastructure
-bootstrap manifests live in the application repository
-[`SquadRules/mcp`](https://github.com/SquadRules/mcp) under `helm/`, not in this
-chart repository.
+## Scope and provenance
 
-## Release process
+This repository owns the chart and its release workflow. Cluster operators,
+Gateway API controllers, certificate issuance, and secret distribution are
+cluster prerequisites—not bundled as operator installers.
 
-On pushes to `main` that change `charts/mcp/**`, and on a `repository_dispatch`
-of type `chart-update`, the [`chart-release`](.github/workflows/chart-release.yml)
-workflow lints the chart, packages it, and pushes the packaged artifact to
-`oci://ghcr.io/squadrules/charts`.
+The chart was extracted from
+[`jakub-plichcinski/kairos-mcp/helm/kairos-mcp`](https://github.com/jakub-plichcinski/kairos-mcp/tree/main/helm/kairos-mcp).
+That tree is historical; make chart changes here rather than in the former
+application repository. Application source lives in
+[`SquadRules/mcp`](https://github.com/SquadRules/mcp).

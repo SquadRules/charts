@@ -1,49 +1,38 @@
-# Step-by-step operator installation (OLM)
+# Optional Kubernetes operator prerequisites
 
-Install these operators before you install the KAIROS MCP chart when you enable any chart-created clusters (RedisFailover, Keycloak, PerconaPGCluster).
+The SquadRules MCP chart does **not** install or manage operators. Install the
+specific operator(s) in your cluster before enabling operator-managed resources:
 
-## 0. Install OLM
+| Chart value | Resource | Required operator |
+| --- | --- | --- |
+| `redisCluster.enabled` | `RedisFailover` | Spotahome Redis operator |
+| `keycloakInstance.enabled` | `Keycloak` | Keycloak Kubernetes operator |
+| `postgresCluster.enabled` | `PerconaPGCluster` | Percona PostgreSQL operator |
 
-Install OLM on your cluster following the official guide:
+These CRDs are not required for the default chart, in which the three
+operator-managed components are disabled. Configure OLM/operator namespaces,
+RBAC and version compatibility according to your cluster distribution and
+the vendor's installation guide.
 
-https://olm.operatorframework.io/docs/getting-started/
+Verify before switching on operator-managed components:
 
-## 1. Install operators (Subscriptions)
-
-```bash
-kubectl apply -k helm/operators
-```
-
-If you install the KAIROS chart into a namespace other than `kairos`, update `helm/operators/operatorgroup.yaml` so `spec.targetNamespaces` includes your release namespace.
-
-## 2. Install infrastructure (ngrok)
-
-```bash
-kubectl apply -k helm/infrastructure
-```
-
-Do not commit ngrok credentials to git. Create them at runtime:
-
-```bash
-kubectl create secret generic ngrok-k8s-credentials -n ngrok-operator \
-  --from-literal=API_KEY="$NGROK_API_KEY" \
-  --from-literal=AUTHTOKEN="$NGROK_AUTHTOKEN"
-```
-
-## 3. Verify required CRDs
-
-```bash
+```sh
 kubectl get crd redisfailovers.databases.spotahome.com
 kubectl get crd keycloaks.k8s.keycloak.org
 kubectl get crd perconapgclusters.pgv2.percona.com
 ```
 
-The chart creates a ClusterIP `rfr-<redisCluster.name>` Service (selecting the Redis master pod). Set `app.redisUrl` to `redis://rfr-<name>:6379` when you enable Redis.
+Only check CRDs for features you enable. Where relevant, enable
+`hooks.operatorPrecheckEnabled` to fail installation early if CRDs are missing.
 
-## 4. Install KAIROS MCP chart
+For external services, use `redisCluster.useOwnCluster`,
+`keycloakInstance.useOwnCluster` and `postgresCluster.useOwnCluster` and
+supply the corresponding `app.*Url` settings.
 
-```bash
-cd helm/kairos-mcp
-helm dependency update
-helm install kairos . -n kairos --create-namespace -f my-values.yaml
-```
+Gateway API requires a GatewayClass controller; cert-manager is only necessary
+when `gateway.tls.certManager.enabled` is enabled. Monitoring custom resources
+require Prometheus Operator CRDs. None of these are installed by this chart.
+
+Historical operator and ngrok manifests are archived in the
+[original Kairos helm directory](https://github.com/jakub-plichcinski/kairos-mcp/tree/main/helm)
+for reference only. They are not maintained as SquadRules operator installers.
