@@ -34,6 +34,30 @@ env:
   HELM_VERSION: v4.0.5
 
 jobs:
+  product-identity:
+    name: Product identity check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Reject obsolete product identifiers
+        run: |
+          set -euo pipefail
+          if git ls-files | grep -Ei 'k[a]iros'; then
+            echo "::error::Obsolete product identifier found in a tracked path"
+            exit 1
+          fi
+          if git grep -In -i 'k[a]iros' -- .; then
+            echo "::error::Obsolete product identifier found in a tracked file"
+            exit 1
+          fi
+          echo "Product identity check passed."
+
   helm-lint:
     name: Helm lint (strict)
     runs-on: ubuntu-latest
@@ -181,7 +205,7 @@ jobs:
   # job; `if: always()` so it runs even when a worker fails, then asserts results.
   integration-pass:
     name: Integration workflow passed
-    needs: [helm-lint, helm-template, helm-unittest, chart-package]
+    needs: [product-identity, helm-lint, helm-template, helm-unittest, chart-package]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -192,6 +216,7 @@ jobs:
           HELM_TEMPLATE: ${{ needs.helm-template.result }}
           HELM_UNITTEST: ${{ needs.helm-unittest.result }}
           CHART_PACKAGE: ${{ needs.chart-package.result }}
+          PRODUCT_IDENTITY: ${{ needs.product-identity.result }}
         run: |
           set -euo pipefail
           echo "helm-lint=$HELM_LINT helm-template=$HELM_TEMPLATE helm-unittest=$HELM_UNITTEST"
@@ -199,4 +224,5 @@ jobs:
           test "$HELM_TEMPLATE" = "success"
           test "$HELM_UNITTEST" = "success"
           test "$CHART_PACKAGE" = "success"
+          test "$PRODUCT_IDENTITY" = "success"
           echo "All integration jobs passed."

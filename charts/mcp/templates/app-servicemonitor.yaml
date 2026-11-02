@@ -2,10 +2,10 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: {{ .Values.app.name | default "kairos-mcp" }}
+  name: {{ .Values.app.name | default "squadrules-mcp" }}
   namespace: {{ .Release.Namespace }}
   labels:
-    app.kubernetes.io/name: {{ .Values.app.name | default "kairos-mcp" }}
+    app.kubernetes.io/name: {{ .Values.app.name | default "squadrules-mcp" }}
     app.kubernetes.io/part-of: {{ .Chart.Name | quote }}
     {{- with .Values.monitoring.serviceMonitor.app.release }}
     release: {{ . }}
@@ -13,7 +13,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ .Values.app.name | default "kairos-mcp" }}
+      app.kubernetes.io/name: {{ .Values.app.name | default "squadrules-mcp" }}
   endpoints:
     - port: metrics
       path: /metrics

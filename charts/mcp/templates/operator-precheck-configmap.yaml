@@ -13,7 +13,7 @@ data:
   POSTGRES_CHECK: {{ .Values.postgresCluster.enabled | quote }}
   check.sh: |
     set -e
-    echo "KAIROS operator pre-check: verifying required CRDs..."
+    echo "SquadRules operator pre-check: verifying required CRDs..."
     missing=""
     if [ "$REDIS_CHECK" = "true" ]; then
       if kubectl get crd redisfailovers.databases.spotahome.com &>/dev/null; then
