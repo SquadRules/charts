@@ -2,7 +2,7 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: {{ .Release.Name }}-kairos-alerts
+  name: {{ .Release.Name }}-squadrules-alerts
   namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/part-of: {{ .Chart.Name | quote }}
@@ -12,35 +12,35 @@ metadata:
 spec:
   groups:
     {{- if empty .Values.monitoring.prometheusRule.rules }}
-    - name: kairos-app
+    - name: squadrules-app
       interval: 30s
       rules:
-        - alert: KAIROSAppDown
-          expr: sum(up{app_kubernetes_io_name="{{ .Values.app.name | default "kairos-mcp" }}"}) == 0
+        - alert: SquadRulesAppDown
+          expr: sum(up{app_kubernetes_io_name="{{ .Values.app.name | default "squadrules-mcp" }}"}) == 0
           for: 2m
           labels:
             severity: critical
             component: app
           annotations:
-            summary: "KAIROS MCP app is down"
-            description: "No instances of the KAIROS app are reachable for at least 2 minutes."
-        - alert: KAIROSAppHighErrorRate
+            summary: "SquadRules MCP app is down"
+            description: "No instances of the SquadRules app are reachable for at least 2 minutes."
+        - alert: SquadRulesAppHighErrorRate
           expr: |
-            sum(rate(kairos_http_requests_total{status=~"5.."}[5m])) by (job)
+            sum(rate(squadrules_http_requests_total{status=~"5.."}[5m])) by (job)
             /
-            sum(rate(kairos_http_requests_total[5m])) by (job)
+            sum(rate(squadrules_http_requests_total[5m])) by (job)
             > 0.05
           for: 5m
           labels:
             severity: warning
             component: app
           annotations:
-            summary: "KAIROS app high 5xx error rate"
+            summary: "SquadRules app high 5xx error rate"
             description: "5xx error rate is above 5% for 5 minutes."
-    - name: kairos-qdrant
+    - name: squadrules-qdrant
       interval: 30s
       rules:
-        - alert: KAIROSQdrantDown
+        - alert: SquadRulesQdrantDown
           expr: sum(up{app_kubernetes_io_name="qdrant"}) == 0
           for: 2m
           labels:

@@ -25,7 +25,7 @@ Uses existingGatewayName when set, otherwise chart-managed gatewayName.
 */}}
 {{- define "mcp.resolvedGatewayName" -}}
 {{- $gw := default dict .Values.gateway -}}
-{{- default ($gw.gatewayName | default "kairos-gateway") $gw.existingGatewayName -}}
+{{- default ($gw.gatewayName | default "squadrules-gateway") $gw.existingGatewayName -}}
 {{- end -}}
 
 {{/*

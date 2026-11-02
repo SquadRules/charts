@@ -26,8 +26,8 @@
 {{- fail "keycloakRealmImport.enabled requires one of: keycloakRealmImport.publicBaseUrl, app.auth.callbackBaseUrl, keycloakRealmImport.publicHost, or gateway.hostname" }}
 {{- end }}
 {{- $host := default $gwHost $publicHost }}
-{{- $realmFile := default "kairos-realm.json" .Values.keycloakRealmImport.realmFile }}
-{{- $raw := .Files.Get (printf "files/%s" $realmFile) | replace "__KAIROS_PUBLIC_ORIGIN__" $origin | replace "__KAIROS_PUBLIC_HOST__" $host }}
+{{- $realmFile := default "squadrules-realm.json" .Values.keycloakRealmImport.realmFile }}
+{{- $raw := .Files.Get (printf "files/%s" $realmFile) | replace "__KAIROS_PUBLIC_ORIGIN__" $origin | replace "__KAIROS_PUBLIC_HOST__" $host | replace "__SQUADRULES_PUBLIC_ORIGIN__" $origin | replace "__SQUADRULES_PUBLIC_HOST__" $host }}
 {{- $realm := mustFromJson $raw }}
 apiVersion: k8s.keycloak.org/v2alpha1
 kind: KeycloakRealmImport
